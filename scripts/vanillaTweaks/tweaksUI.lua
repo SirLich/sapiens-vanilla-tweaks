@@ -6,7 +6,7 @@ local tweaksUI = {
 	name = "Tweaks UI",
 	view = nil,
 	parent = nil,
-	icon = "icon_configure",
+	icon = "icon_edit",
 }
 
 -- Hammerstone
@@ -14,13 +14,13 @@ local saveState = mjrequire "hammerstone/state/saveState"
 
 -- Base
 local model = mjrequire "common/model"
+local logicInterface = mjrequire "mainThread/logicInterface"
 local gameConstants = mjrequire "common/gameConstants"
 local timer = mjrequire "common/timer"
 
 -- UI
 local uiSlider = mjrequire "mainThread/ui/uiCommon/uiSlider"
 local uiCommon = mjrequire "mainThread/ui/uiCommon/uiCommon"
-local uiSelectionLayout = mjrequire "mainThread/ui/uiCommon/uiSelectionLayout"
 local uiStandardButton = mjrequire "mainThread/ui/uiCommon/uiStandardButton"
 
 -- Math
@@ -83,18 +83,47 @@ local function addSlider(parentView, sliderTitle, min, max, value, changedFuncti
 		baseFunction = continuousFunctionOrNil
 	end
 	
-	local sliderView = uiSlider:create(parentView, vec2(200, 20), min, max, value, options, baseFunction)
+	local sliderView = uiSlider:create(parentView, vec2(300, 20), min, max, value, options, baseFunction)
 	sliderView.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
 	sliderView.baseOffset = vec3(elementControlX, elementYOffset - 6, 0)
 
 	elementYOffset = elementYOffset - yOffsetBetweenElements
-	uiSelectionLayout:addView(parentView, sliderView)
 	return sliderView
 end
 
 -- ============================================================================
 -- End of copied from optionsView.lua
 -- ============================================================================
+
+local function getCurrentSpeedValue(speedKey, ratio)
+	local current = saveState:getValueClient("vt." .. speedKey)
+	if current == nil then
+		current = gameConstants[speedKey]
+	else
+		current = current * ratio
+	end
+
+	return current
+end
+
+local function getCurrentConstantvalue(key)
+	local current = saveState:getValueClient("vt." .. key)
+	if current == nil then
+		current = gameConstants[key]
+	end
+
+	return current
+end
+local function setSpeedConstantAndReload(constantName, value)
+	local paramTable = {
+		constantName = constantName,
+		value = value
+	}
+
+	logicInterface:callServerFunction("setGameConstantServer", paramTable)
+	logicInterface:callServerFunction("setFastForward", true)
+	logicInterface:callServerFunction("setFastForward", false)
+end
 
 function tweaksUI:init(manageUI)
 	--- Called when the UI is ready to be generated
@@ -123,13 +152,57 @@ function tweaksUI:init(manageUI)
 		tweaksUI.view.hidden = true
 	end)
 
-	addTitleHeader(backgroundView, "Tweaks (remember to restart!)")
+	addTitleHeader(backgroundView, "Speed Controls (not to scale)")
 
-	-- Sliders
-	addSlider(backgroundView, "Play Speed" .. ":", 0.1, 10, 2, function(newValue)
-		-- gameConstants.playSpeed = newValue
-		-- saveState:setValueClient("vt.playSpeed", newValue)
+	addSlider(backgroundView, "Pause Speed: ", 0, 100, getCurrentSpeedValue("pauseSpeed", 100), function(newValue)
+		local newSpeed = newValue / 100
+		gameConstants.playSpeed = newSpeed
+		saveState:setValueClient("vt.pauseSpeed", newSpeed)
+		setSpeedConstantAndReload("pauseSpeed", newSpeed)
 	end)
+
+	addSlider(backgroundView, "Play Speed: ", 1, 100, getCurrentSpeedValue("playSpeed", 20), function(newValue)
+		local newSpeed = newValue / 20
+		gameConstants.playSpeed = newSpeed
+		saveState:setValueClient("vt.playSpeed", newSpeed)
+		setSpeedConstantAndReload("playSpeed", newSpeed)
+	end)
+
+	addSlider(backgroundView, "Fast Speed: ", 1, 100, getCurrentSpeedValue("fastSpeed", 10), function(newValue)
+		local newSpeed = newValue / 10
+		gameConstants.fastSpeed = newSpeed
+		saveState:setValueClient("vt.fastSpeed", newSpeed)
+		setSpeedConstantAndReload("fastSpeed", newSpeed)
+	end)
+
+	addSlider(backgroundView, "Ultra Speed: ", 1, 1000, getCurrentSpeedValue("ultraSpeed", 10), function(newValue)
+		local newSpeed = newValue / 10
+		gameConstants.fastSpeed = newSpeed
+		saveState:setValueClient("vt.ultraSpeed", newSpeed)
+		setSpeedConstantAndReload("ultraSpeed", newSpeed)
+	end)
+
+	addSlider(backgroundView, "Slow Motion Speed:", 1, 100, getCurrentSpeedValue("slowMotionSpeed", 100), function(newValue)
+		local newSpeed = newValue / 100
+		gameConstants.fastSpeed = newSpeed
+		saveState:setValueClient("vt.slowMotionSpeed", newSpeed)
+		setSpeedConstantAndReload("slowMotionSpeed", newSpeed)
+	end)
+
+	-- addTitleHeader(backgroundView, "Game Constants")
+
+
+	-- addSlider(backgroundView, "Slow Motion Speed:", 1, 20, getCurrentConstantvalue("allowedPlansPerFollower"), function(newValue)
+	-- 	gameConstants.allowedPlansPerFollower = newValue
+	-- 	saveState:setValueClient("vt.allowedPlansPerFollower", newValue)
+
+	-- 	local paramTable = {
+	-- 		constantName = "allowedPlansPerFollower",
+	-- 		value = newValue
+	-- 	}
+	
+	-- 	logicInterface:callServerFunction("setGameConstantServer", paramTable)
+	-- end)
 end
 
 -- Called every frame
