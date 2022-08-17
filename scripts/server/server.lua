@@ -12,13 +12,28 @@ local mod = {
 
 --- Base
 local gameConstants = mjrequire "common/gameConstants"
-
+local skill = mjrequire "common/skill"
 
 local function setGameConstantServer(clientID, paramTable)
+	--- clientID is the clientID of the client that sent the request.
 	--- paramTable.constantName: The name of the constant to edit.
 	--- paramTable.value: The new value of the constant.
 	gameConstants[paramTable.constantName] = paramTable.value
 end
+
+local function setSkillConstantServer(clientID, paramTable)
+	--- clientID is the clientID of the client that sent the request.
+	--- paramTable.constantName: The name of the constant to edit.
+	--- paramTable.value: The new value of the constant.
+	skill[paramTable.constantName] = paramTable.value
+end
+
+local function refreshPlansServer(clientID)
+	-- This won't "do" anything other than trigger a recalculation of the plans.
+	mod.serverWorld:addToClientFollowerCount(clientID, 1)
+	mod.serverWorld:addToClientFollowerCount(clientID, -1)
+end
+
 
 function mod:onload(server)
 	mod.server = server
@@ -37,6 +52,8 @@ function mod:onload(server)
 		mod.serverWorld = serverWorld
 
 		mod.server:registerNetFunction("setGameConstantServer", setGameConstantServer)
+		mod.server:registerNetFunction("setSkillConstantServer", setSkillConstantServer)
+		mod.server:registerNetFunction("refreshPlansServer", refreshPlansServer)
 	end
 end
 
