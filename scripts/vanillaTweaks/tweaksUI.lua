@@ -185,7 +185,7 @@ function tweaksUI:addSettingSlot(parentView, buttonName, slot)
 	--- @param slot View The view to render on the right side (contains the settings)
 
 	table.insert(self.settingSlots, slot)
-	slot.hidden = true 
+	slot.hidden = true
 	
 	local button = uiStandardButton:create(parentView, buttonSize)
 	button.relativePosition = ViewPosition(MJPositionCenter, MJPositionTop)
@@ -248,13 +248,14 @@ function tweaksUI:generateProgressionSlot(parentView)
 		local constantName = "allowedPlansPerFollower"
 
 		local paramTable = {
+			tableName = "gameConstants",
 			constantName = constantName,
 			value = newValue
 		}
 
 		gameConstants[constantName] = newValue
 		saveState:setValueClient("vt." .. constantName, newValue)
-		logicInterface:callServerFunction("setGameConstantServer", paramTable)
+		logicInterface:callServerFunction("setConstantServer", paramTable)
 		logicInterface:callServerFunction("refreshPlansServer")
 	end)
 
@@ -262,32 +263,59 @@ function tweaksUI:generateProgressionSlot(parentView)
 		local constantName = "maxRoles"
 
 		local paramTable = {
+			tableName = "gameConstants",
 			constantName = constantName,
 			value = newValue
 		}
 
 		skill.maxRoles = newValue
-		logicInterface:callServerFunction("setSkillConstantServer", paramTable)
+		logicInterface:callServerFunction("setConstantServer", paramTable)
 		saveState:setValueClient("vt." .. constantName, newValue)
 	end)
 
-	--- TODO: This doesn't work yet :(
-		
-	local ratio = 0.1;
-	local default = 400;
-	local name = "timeToCompleteSkills"
-	addSlider(progressionSlot, "Discovery Speed: ", 0, 200, getCurrentValue(name, ratio, default), default, ratio, function(newValue)
+	-- --- TODO: This doesn't work yet :(
+
+	-- local ratio = 0.1;
+	-- local default = 400;
+	-- local name = "timeToCompleteSkills"
+	-- addSlider(progressionSlot, "Discovery Speed: ", 0, 200, getCurrentValue(name, ratio, default), default, ratio, function(newValue)
+	-- 	local paramTable = {
+	-- 		constantName = name,
+	-- 		value = newValue
+	-- 	}
+
+	-- 	skill.maxRoles = newValue
+	-- 	logicInterface:callServerFunction("setSkillConstantServer", paramTable)
+	-- 	saveState:setValueClient("vt." .. name, newValue)
+	-- end)
+
+	return progressionSlot
+end
+
+function tweaksUI:generateSapienSlot(parentView)
+	local sapienSlot = View.new(parentView)
+	elementYOffset = elementYOffsetStart
+	sapienSlot.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
+	sapienSlot.size = backgroundSize
+
+	addTitleHeader(sapienSlot, "Sapien Tweaks")
+
+	addSlider(sapienSlot, "Max Orders per Follower: ", 0, 100, getCurrentSpeedValue("allowedPlansPerFollower", 1), 5, 1, function(newValue)
+		local constantName = "allowedPlansPerFollower"
+
 		local paramTable = {
-			constantName = name,
+			tableName = "gameConstants",
+			constantName = constantName,
 			value = newValue
 		}
 
-		skill.maxRoles = newValue
-		logicInterface:callServerFunction("setSkillConstantServer", paramTable)
-		saveState:setValueClient("vt." .. name, newValue)
+		gameConstants[constantName] = newValue
+		saveState:setValueClient("vt." .. constantName, newValue)
+		logicInterface:callServerFunction("setConstantServer", paramTable)
+		logicInterface:callServerFunction("refreshPlansServer")
 	end)
 
-	return progressionSlot
+	return sapienSlot
 end
 
 function tweaksUI:init(manageUI)
@@ -320,6 +348,7 @@ function tweaksUI:init(manageUI)
 
 	self:addSettingSlot(tabView, "Time", self:generateTimeSlot(self.view))
 	self:addSettingSlot(tabView, "Progression", self:generateProgressionSlot(self.view))
+	self:addSettingSlot(tabView, "Sapiens", self:generateSapienSlot(self.view))
 
 	-- Make the first setting slot visible
 	tweaksUI.settingSlots[1].hidden = false

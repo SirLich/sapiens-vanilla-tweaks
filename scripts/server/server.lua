@@ -4,6 +4,10 @@
 local mod = {
 	loadOrder = 1,
 
+	-- Constants
+	skill = nil,
+	gameConstants = nil,
+
 	-- Local state
 	bridge = nil,
 	serverWorld = nil,
@@ -13,20 +17,20 @@ local mod = {
 --- Base
 local gameConstants = mjrequire "common/gameConstants"
 local skill = mjrequire "common/skill"
+local sapienConstants = mjrequire "common/sapienConstants"
 
-local function setGameConstantServer(clientID, paramTable)
+mod.skill = skill
+mod.gameConstants = gameConstants
+mod.sapienConstants = sapienConstants
+
+local function setConstantServer(clientID, paramTable)
 	--- clientID is the clientID of the client that sent the request.
+	--- paramTable.tableName: The name of the table to set the constant in
 	--- paramTable.constantName: The name of the constant to edit.
 	--- paramTable.value: The new value of the constant.
-	gameConstants[paramTable.constantName] = paramTable.value
+	mod[paramTable.tableName][paramTable.constantName] = paramTable.value
 end
 
-local function setSkillConstantServer(clientID, paramTable)
-	--- clientID is the clientID of the client that sent the request.
-	--- paramTable.constantName: The name of the constant to edit.
-	--- paramTable.value: The new value of the constant.
-	skill[paramTable.constantName] = paramTable.value
-end
 
 local function refreshPlansServer(clientID)
 	-- This won't "do" anything other than trigger a recalculation of the plans.
@@ -51,8 +55,7 @@ function mod:onload(server)
 		super_setServerWorld(self, serverWorld)
 		mod.serverWorld = serverWorld
 
-		mod.server:registerNetFunction("setGameConstantServer", setGameConstantServer)
-		mod.server:registerNetFunction("setSkillConstantServer", setSkillConstantServer)
+		mod.server:registerNetFunction("setConstantServer", setConstantServer)
 		mod.server:registerNetFunction("refreshPlansServer", refreshPlansServer)
 	end
 end
