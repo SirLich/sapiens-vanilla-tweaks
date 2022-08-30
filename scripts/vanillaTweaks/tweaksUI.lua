@@ -10,7 +10,14 @@ local tweaksUI = {
 
 	-- The setting slots (renderd conditionally based on the current selection)
 	settingSlots = {},
+
+	-- Local State
+	world = nil
 }
+
+function tweaksUI:setWorld(world)
+	tweaksUI.world = world
+end
 
 -- Hammerstone
 local saveState = mjrequire "hammerstone/state/saveState"
@@ -68,6 +75,45 @@ local function addTitleHeader(parentView, title)
 
 	elementYOffset = elementYOffset - yOffsetBetweenElements
 	return textView
+end
+
+local function addToggleButton(parentView, toggleButtonTitle, settingName, changedFunction)
+	local settingName = "vt." .. settingName
+	local initialValue = saveState:getValueClient(settingName, false)
+
+	local toggleButton = uiStandardButton:create(parentView, vec2(26,26), uiStandardButton.types.toggle)
+	toggleButton.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
+	toggleButton.baseOffset = vec3(elementControlX, elementYOffset, 0)
+	uiStandardButton:setToggleState(toggleButton, initialValue)
+	
+	local textView = TextView.new(parentView)
+	textView.font = Font(uiCommon.fontName, 16)
+	textView.relativePosition = ViewPosition(MJPositionInnerRight, MJPositionTop)
+	textView.baseOffset = vec3(elementTitleX,elementYOffset - 4, 0)
+	textView.text = toggleButtonTitle
+
+	uiStandardButton:setClickFunction(toggleButton, function()
+		changedFunction(uiStandardButton:getToggleState(toggleButton))
+	end)
+
+	-- Adjust the changed function to also include the slider value view
+	local super_changedFunction = changedFunction
+	changedFunction = function(newValue)
+		super_changedFunction(newValue)
+		saveState:setValueClient(settingName, newValue)
+	end
+
+	-- TODO: Come up with a better solution than this
+	local MEANINGLESS_DELAY = 5
+	timer:addCallbackTimer(MEANINGLESS_DELAY, function()
+		-- Initial trigger to set the time values and text
+		-- done after a delay to let other systems catch up
+		changedFunction(initialValue)
+	end)
+
+	elementYOffset = elementYOffset - yOffsetBetweenElements
+	
+	return toggleButton
 end
 
 local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
@@ -130,9 +176,6 @@ local function addSlider(parentView, sliderTitle, min, max, currentValue, defaul
 		changedFunction(currentValue)
 	end)
 
-
-
-	
 	uiSlider:setValue(sliderView, currentValue)
 
 	elementYOffset = elementYOffset - yOffsetBetweenElements
@@ -154,12 +197,24 @@ local function getCurrentSpeedValue(speedKey, ratio)
 	return current
 end
 
+local function setConstantFromTable(paramTable)
+	--- This function sets a game constant on both the client thread
+	--- and the server thread.
+
+	-- Client
+	tweaksUI[paramTable.tableName][paramTable.constantName] = paramTable.value
+
+	-- Server
+	logicInterface:callServerFunction("setConstantServer", paramTable)
+end
+
 local function getCurrentValue(key, ratio, default)
 	return saveState:getValueClient("vt." .. key, default) * ratio
 end
 
 local function setSpeedConstantAndReload(constantName, newValue)
 	local paramTable = {
+		tableName = "gameConstants",
 		constantName = constantName,
 		value = newValue
 	}
@@ -167,11 +222,23 @@ local function setSpeedConstantAndReload(constantName, newValue)
 	gameConstants[constantName] = newValue
 	saveState:setValueClient("vt." .. constantName, newValue)
 
-	mj:log("Setting " .. constantName .. " to " .. newValue)
+	logicInterface:callServerFunction("setConstantServer", paramTable)
 
-	logicInterface:callServerFunction("setGameConstantServer", paramTable)
-	logicInterface:callServerFunction("setFastForward", true)
-	logicInterface:callServerFunction("setFastForward", false)
+	-- Representing current speed value
+	local speedMultiplierIndex = tweaksUI.world:getSpeedMultiplierIndex()
+
+	-- Annoying logic, but we need to switch speeds to trigger a rebuild
+	-- of the time. This just ensures we always end up where we started.
+	if speedMultiplierIndex == 0 then
+		logicInterface:callServerFunction("setPaused", true)
+	elseif speedMultiplierIndex == 1 then
+		logicInterface:callServerFunction("setPaused", false)
+		logicInterface:callServerFunction("setFastForward", false)
+		logicInterface:callServerFunction("setSlowMotion", false)
+	elseif speedMultiplierIndex == 2 then
+		logicInterface:callServerFunction("setFastForward", true)
+
+	end
 end
 
 -- Positional information for the sidebar buttons
@@ -234,6 +301,41 @@ function tweaksUI:generateTimeSlot(parentView)
 	end)
 
 	return timeSlot
+end
+
+function tweaksUI:generateMovementSlot(parentView)
+	local movementSlot = View.new(parentView)
+	elementYOffset = elementYOffsetStart
+	movementSlot.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
+	movementSlot.size = backgroundSize
+	
+	addTitleHeader(movementSlot, "Movement Tweaks")
+
+
+	-- parentView, toggleButtonTitle, toggleValue, changedFunction
+	addToggleButton(movementSlot, "Unlock Player Height", "unlockPlayerHeight", function(newValue)
+		local localPlayer = mjrequire "mainThread/localPlayer"
+
+		if newValue then
+			localPlayer:setMaxPlayerHeight(mj:mToP(10000000.0))
+			localPlayer:setSpeedIncreaseFactorAtMaxHeight(400000.0)
+		else
+			localPlayer:setMaxPlayerHeight(mj:mToP(30.0))
+			localPlayer:setSpeedIncreaseFactorAtMaxHeight(500000.0)
+		end
+	end)
+
+	addToggleButton(movementSlot, "Remove Movement Bounds", "removeMovementBounds", function(newValue)
+		local localPlayer = mjrequire "mainThread/localPlayer"
+
+		if newValue then
+			localPlayer:setMaxDistanceFromClosestSapien(mj:mToP(1000.0))
+		else
+			localPlayer:setMaxDistanceFromClosestSapien(mj:mToP(1000000.0))
+		end
+	end)
+
+	return movementSlot
 end
 
 function tweaksUI:generateProgressionSlot(parentView)
@@ -300,19 +402,15 @@ function tweaksUI:generateSapienSlot(parentView)
 
 	addTitleHeader(sapienSlot, "Sapien Tweaks")
 
-	addSlider(sapienSlot, "Max Orders per Follower: ", 0, 100, getCurrentSpeedValue("allowedPlansPerFollower", 1), 5, 1, function(newValue)
-		local constantName = "allowedPlansPerFollower"
+	-- parentView, toggleButtonTitle, toggleValue, changedFunction
+	addToggleButton(sapienSlot, "Normalize Walk Speed", "normalizeWalkSpeed", function(newValue)
+		--- No implementation, since all we want is walk speed normalization :)
+	end)
 
-		local paramTable = {
-			tableName = "gameConstants",
-			constantName = constantName,
-			value = newValue
-		}
-
-		gameConstants[constantName] = newValue
-		saveState:setValueClient("vt." .. constantName, newValue)
-		logicInterface:callServerFunction("setConstantServer", paramTable)
-		logicInterface:callServerFunction("refreshPlansServer")
+	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
+	local ratio = 10
+	addSlider(sapienSlot, "Walk Speed Multiplier: ", 0, 100, saveState:getValueClient("vt.walkSpeedMultiplier", 1) * ratio, 1, ratio, function(newValue)
+		saveState:setValueClient("vt.walkSpeedMultiplier", newValue)
 	end)
 
 	return sapienSlot
@@ -348,6 +446,7 @@ function tweaksUI:init(manageUI)
 
 	self:addSettingSlot(tabView, "Time", self:generateTimeSlot(self.view))
 	self:addSettingSlot(tabView, "Progression", self:generateProgressionSlot(self.view))
+	self:addSettingSlot(tabView, "Movement", self:generateMovementSlot(self.view))
 	self:addSettingSlot(tabView, "Sapiens", self:generateSapienSlot(self.view))
 
 	-- Make the first setting slot visible

@@ -22,17 +22,6 @@ function vanillaTweaks:init(clientState)
     vanillaTweaks.clientState = clientState
 
     uiManager:registerManageElement(tweaksUI);
-
-    -- timer:addCallbackTimer(3, function()
-
-    --     -- Restore state. This one is special, since it needs
-    --     -- to be done after the client state is initialized, and isn't
-    --     -- stored by default, unlike the other flags.
-    --     if saveState:getValueClient('cm.instantBuild') then
-    --         completeCheat()
-    --     end
-    -- end)
-
 end
 
 return vanillaTweaks

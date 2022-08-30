@@ -7,8 +7,9 @@ local mod = {
 	-- Constants
 	skill = nil,
 	gameConstants = nil,
+	sapienConstants = nil,
 
-	-- Local state
+	-- Exposed to Hammerstone
 	bridge = nil,
 	serverWorld = nil,
 	server = nil
