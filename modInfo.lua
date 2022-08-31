@@ -4,7 +4,7 @@ local modInfo = {
     version = "0.0.1",
     type = "world",
     developer = "SirLich",
-    preview = "assets/preview.jpg"
+    preview = "assets/preview.png"
 }
 
 return modInfo
