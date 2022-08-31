@@ -203,7 +203,7 @@ end
 local function getCurrentSpeedValue(speedKey, ratio)
 	local current = saveState:getValue("vt." .. speedKey)
 	if current == nil then
-		current = gameConstants[speedKey]
+		current = gameConstants[speedKey] * ratio
 	else
 		current = current * ratio
 	end
