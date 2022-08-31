@@ -8,6 +8,11 @@ local tweaksUI = {
 	parent = nil,
 	icon = "icon_edit",
 
+	-- Constants
+	skill = nil,
+	gameConstants = nil,
+	sapienConstants = nil,
+
 	-- The setting slots (renderd conditionally based on the current selection)
 	settingSlots = {},
 
@@ -18,6 +23,15 @@ local tweaksUI = {
 function tweaksUI:setWorld(world)
 	tweaksUI.world = world
 end
+
+--- Import Setup
+local gameConstants = mjrequire "common/gameConstants"
+local skill = mjrequire "common/skill"
+local sapienConstants = mjrequire "common/sapienConstants"
+
+tweaksUI.skill = skill
+tweaksUI.gameConstants = gameConstants
+tweaksUI.sapienConstants = sapienConstants
 
 -- Hammerstone
 local saveState = mjrequire "hammerstone/state/saveState"
@@ -79,7 +93,7 @@ end
 
 local function addToggleButton(parentView, toggleButtonTitle, settingName, changedFunction)
 	local settingName = "vt." .. settingName
-	local initialValue = saveState:getValueClient(settingName, false)
+	local initialValue = saveState:getValue(settingName, {default = false})
 
 	local toggleButton = uiStandardButton:create(parentView, vec2(26,26), uiStandardButton.types.toggle)
 	toggleButton.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
@@ -100,7 +114,7 @@ local function addToggleButton(parentView, toggleButtonTitle, settingName, chang
 	local super_changedFunction = changedFunction
 	changedFunction = function(newValue)
 		super_changedFunction(newValue)
-		saveState:setValueClient(settingName, newValue)
+		saveState:setValue(settingName, newValue)
 	end
 
 	-- TODO: Come up with a better solution than this
@@ -187,7 +201,7 @@ end
 -- ============================================================================
 
 local function getCurrentSpeedValue(speedKey, ratio)
-	local current = saveState:getValueClient("vt." .. speedKey)
+	local current = saveState:getValue("vt." .. speedKey)
 	if current == nil then
 		current = gameConstants[speedKey]
 	else
@@ -208,10 +222,6 @@ local function setConstantFromTable(paramTable)
 	logicInterface:callServerFunction("setConstantServer", paramTable)
 end
 
-local function getCurrentValue(key, ratio, default)
-	return saveState:getValueClient("vt." .. key, default) * ratio
-end
-
 local function setSpeedConstantAndReload(constantName, newValue)
 	local paramTable = {
 		tableName = "gameConstants",
@@ -220,7 +230,7 @@ local function setSpeedConstantAndReload(constantName, newValue)
 	}
 
 	gameConstants[constantName] = newValue
-	saveState:setValueClient("vt." .. constantName, newValue)
+	saveState:setValue("vt." .. constantName, newValue)
 
 	logicInterface:callServerFunction("setConstantServer", paramTable)
 
@@ -338,6 +348,21 @@ function tweaksUI:generateMovementSlot(parentView)
 	return movementSlot
 end
 
+function tweaksUI:generateInformationSlot(parentView)
+	local infoSlot = View.new(parentView)
+	elementYOffset = elementYOffsetStart
+	infoSlot.relativePosition = ViewPosition(MJPositionCenter, MJPositionTop)
+	infoSlot.size = backgroundSize
+
+	local textView = TextView.new(infoSlot)
+	textView.font = Font(uiCommon.fontName, 16)
+	textView.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
+	textView.baseOffset = vec3( 450,elementYOffset - 4, 0)
+	textView.text = "Welcome to Vanilla Tweaks!\n\nThis mod is designed as a replacement for one-off tweak mods,\nwhich adjust something to a static value.\n\nEvery setting here can be set, in-game, to your choice.\n\nI will be adding more settings soon. Topics include:\n - Birthrate\n - Sapien Age\n - Animal Spawns"
+
+	return infoSlot
+end
+
 function tweaksUI:generateProgressionSlot(parentView)
 	local progressionSlot = View.new(parentView)
 	elementYOffset = elementYOffsetStart
@@ -356,12 +381,12 @@ function tweaksUI:generateProgressionSlot(parentView)
 		}
 
 		gameConstants[constantName] = newValue
-		saveState:setValueClient("vt." .. constantName, newValue)
+		saveState:setValue("vt." .. constantName, newValue)
 		logicInterface:callServerFunction("setConstantServer", paramTable)
 		logicInterface:callServerFunction("refreshPlansServer")
 	end)
 
-	addSlider(progressionSlot, "Max Roles: ", 0, 50, saveState:getValueClient("vt.maxRoles", 6), 6, 1, function(newValue)
+	addSlider(progressionSlot, "Max Roles: ", 0, 50, saveState:getValue("vt.maxRoles", {default = 6}), 6, 1, function(newValue)
 		local constantName = "maxRoles"
 
 		local paramTable = {
@@ -372,7 +397,7 @@ function tweaksUI:generateProgressionSlot(parentView)
 
 		skill.maxRoles = newValue
 		logicInterface:callServerFunction("setConstantServer", paramTable)
-		saveState:setValueClient("vt." .. constantName, newValue)
+		saveState:setValue("vt." .. constantName, newValue)
 	end)
 
 	-- --- TODO: This doesn't work yet :(
@@ -409,8 +434,62 @@ function tweaksUI:generateSapienSlot(parentView)
 
 	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
 	local ratio = 10
-	addSlider(sapienSlot, "Walk Speed Multiplier: ", 0, 100, saveState:getValueClient("vt.walkSpeedMultiplier", 1) * ratio, 1, ratio, function(newValue)
-		saveState:setValueClient("vt.walkSpeedMultiplier", newValue)
+	local default = 1
+	addSlider(sapienSlot, "Walk Speed Multiplier: ", 0, 100, saveState:getValue("vt.walkSpeedMultiplier", {default = default}) * ratio, default, ratio, function(newValue)
+		saveState:setValue("vt.walkSpeedMultiplier", newValue)
+	end)
+
+	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
+	local ratio = 10
+	addSlider(sapienSlot, "Hunger Multiplier: ", 0, 50, saveState:getValue("vt.hungerMultiplier", {default = 1}) * ratio, 1, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "hungerIncrementMultiplier",
+			value = newValue
+		})
+		saveState:setValue("vt.hungerMultiplier", newValue)
+	end)
+
+	local ratio = 10
+	addSlider(sapienSlot, "Music Need Multiplier: ", 0, 50, saveState:getValue("vt.needMusicMultiplier", {default = 1}) * ratio, 1, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "musicNeedIncrementMultiplier",
+			value = newValue
+		})
+		saveState:setValue("vt.needMusicMultiplier", newValue)
+	end)
+
+	local ratio = 0.1
+	addSlider(sapienSlot, "Injury Duration: ", 0, 100, saveState:getValue("vt.injuryDuration", {default = 400}) * ratio, 400, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "injuryDuration",
+			value = newValue
+		})
+		saveState:setValue("vt.injuryDuration", newValue)
+	end)
+
+	local ratio = 1
+	local default = 10
+	addSlider(sapienSlot, "Time to become Wet: ", 0, 100, saveState:getValue("vt.wetDuration", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "wetDuration",
+			value = newValue
+		})
+		saveState:setValue("vt.wetDuration", newValue)
+	end)
+
+	local ratio = 1
+	local default = 30
+	addSlider(sapienSlot, "Time to become Dry: ", 0, 100, saveState:getValue("vt.dryDuration", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "dryDuration",
+			value = newValue
+		})
+		saveState:setValue("vt.dryDuration", newValue)
 	end)
 
 	return sapienSlot
@@ -443,6 +522,9 @@ function tweaksUI:init(manageUI)
 	tabView.size = vec2(sizeToUseX,sizeToUseX) * 2.0
 	tabView.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
 	tabView.baseOffset = vec3(20, -100, -2)
+
+	self:addSettingSlot(tabView, "Mod Information", self:generateInformationSlot(self.view))
+	currentButtonSlotOffset =  currentButtonSlotOffset + (buttonSlotOffset / 2) -- Provide some padding
 
 	self:addSettingSlot(tabView, "Time", self:generateTimeSlot(self.view))
 	self:addSettingSlot(tabView, "Progression", self:generateProgressionSlot(self.view))

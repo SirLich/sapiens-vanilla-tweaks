@@ -5,35 +5,6 @@ local mod = {
 	loadOrder = 0
 }
 
--- Copied Data (sad!)
--- TODO: These are actually exposed. Use the exposed versions!
-
-local baseWalkSpeed = mj:mToP(2.0)
-
-local lifeStages = mj:indexed {
-	{
-		key = "child",
-		duration = 10.0,
-		speedMultiplier = 1.1,
-		animationSpeedExtraMultiplier = 1.5,
-		eyeHeight = mj:mToP(0.9),
-	},
-	{
-		key = "adult",
-		duration = 40.0,
-		speedMultiplier = 1.5,
-		animationSpeedExtraMultiplier = 1.0,
-		eyeHeight = mj:mToP(1.5),
-	},
-	{
-		key = "elder",
-		duration = 10.0,
-		speedMultiplier = 1.0,
-		animationSpeedExtraMultiplier = 1.0,
-		eyeHeight = mj:mToP(1.5),
-	},
-}
-
 
 function mod:onload(sapienConstants)
 
@@ -47,8 +18,8 @@ function mod:onload(sapienConstants)
 			return super_getWalkSpeed(self, sharedState)
 		end
 
-		local baseSpeed = 0
-
+		local baseSpeed = mj:mToP(2.0)
+		
 		local tribeID = sharedState.tribeID
 
 		local paramTable = {
@@ -57,9 +28,9 @@ function mod:onload(sapienConstants)
 		}
 
 		if saveState:getValue("vt.normalizeWalkSpeed", paramTable) then
-			baseSpeed = baseWalkSpeed * lifeStages[sharedState.lifeStageIndex].speedMultiplier
+			baseSpeed = baseSpeed * sapienConstants.lifeStages[sharedState.lifeStageIndex].speedMultiplier
 		else
-			baseSpeed = baseWalkSpeed * lifeStages['adult'].speedMultiplier
+			baseSpeed = baseSpeed * sapienConstants.lifeStages['adult'].speedMultiplier
 		end
 
 		local speed =  baseSpeed * saveState:getValue("vt.walkSpeedMultiplier", {
