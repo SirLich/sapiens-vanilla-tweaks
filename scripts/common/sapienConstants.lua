@@ -27,12 +27,8 @@ function mod:onload(sapienConstants)
 			default = false
 		}
 
-		if saveState:getValue("vt.normalizeWalkSpeed", paramTable) then
-			baseSpeed = baseSpeed * sapienConstants.lifeStages[sharedState.lifeStageIndex].speedMultiplier
-		else
-			baseSpeed = baseSpeed * sapienConstants.lifeStages['adult'].speedMultiplier
-		end
-
+		baseSpeed = baseSpeed * sapienConstants.lifeStages[sharedState.lifeStageIndex].speedMultiplier
+		
 		local speed =  baseSpeed * saveState:getValue("vt.walkSpeedMultiplier", {
 			tribeID = tribeID,
 			default = 1

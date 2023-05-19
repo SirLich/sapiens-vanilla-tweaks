@@ -1,0 +1,52 @@
+Vanilla Tweaks mod adds a collection tweaks to the base game. 
+
+This mod was designed to replace one-off mods that simply tweaked a single thing to a set value.
+
+Every 'tweak' can be set in-game, in real-time, whilst playing Sapiens. The values will also be saved between runs. If you want to revert a change, the 'default value' button will always revert to the original game value.
+
+In the future I will be adding more tweaks. Please get in touch: https://discord.gg/WnN8hj2Fyg
+
+------------------------------------
+TIME TWEAKS
+------------------------------------
+
+Time Tweaks allow you to tweak how fast time passes, in the various modes. For example, you could make pause speed go forward at 0.01% speed, instead of a true pause.
+
+ - Pause Speed
+ - Play Speed
+ - Fast Forward Speed
+ - Ultra Speed
+ - Slow Motion Speed
+
+------------------------------------
+PROGRESSION TWEAKS
+------------------------------------
+
+These tweaks control how quickly you can move through the games tech tree by adjusting Sapiens capabilities:
+ -  Max Orders per Follow: How many orders each Sapien can "queue" before it complains you have too many orders.
+ -  Max Roles:  How many skills/roles you can assign to each Sapien.
+
+------------------------------------
+MOVEMENT TWEAKS
+------------------------------------
+
+These tweaks are for the player.
+
+  - Unlock Player Height: Fly as high as you want! No more height limit. 
+  - Remove Movement Bounds: Fly very far away from Sapiens. No more invisible wall.|
+
+------------------------------------
+SAPIEN TWEAKS
+------------------------------------
+
+Final category covers a lot of tweaks related to Sapiens themselves. I will add more soon. I especially want to add tweaks for pregnancy. 
+
+ - Normalize Walk Speed: Removes the walk-speed debuff that old people get. 
+ - Walk Speed Multiplier: A direct multiplier to the sapiens walk speed. Does not effect work-speed. 
+ - Hunger Multiplier: How quickly sapiens get hungry. 0 to turn off hunger.
+ - Music Need Multiplier: How much sapiens need music. 0 to turn off the need.
+ - Injury Duration: How long Sapiens are injured after being hurt. 0 to heal instantly.
+ - Time to Become Wet: How long Sapiens must be in the rain before getting wet status. 
+ - Time to Become Dry: How long Sapiens must be out of the rain before the wet status goes away. 
+
+Thanks for reading this far. Once again, I have a discord: https://discord.gg/WnN8hj2Fyg

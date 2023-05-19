@@ -3,7 +3,7 @@
 --- @author SirLich
 
 local tweaksUI = {
-	name = "Vanilla Tweeks",
+	name = "Vanilla Tweaks",
 	view = nil,
 	parent = nil,
 	icon = "icon_edit",
@@ -149,11 +149,18 @@ local function addSlider(parentView, sliderTitle, min, max, currentValue, defaul
 	sliderTitleView.text = sliderTitle
 	
 	local sliderValueView = nil
-
+	local resetButton = nil
+	
 	-- Adjust the changed function to also include the slider value view
 	local super_changedFunction = changedFunction
 	changedFunction = function(newValue)
 		local floatValue = newValue / floatDivisor
+		if floatValue == defaultValue then
+			resetButton.hidden = true
+		else
+			resetButton.hidden = false
+		end
+
 		super_changedFunction(floatValue)
 		sliderValueView.text = string.format("%.1f", floatValue)
 	end
@@ -169,7 +176,7 @@ local function addSlider(parentView, sliderTitle, min, max, currentValue, defaul
 	sliderValueView.baseOffset = vec3(2,0, 0)
 
 	local resetButtonSize = vec2(80, 20)
-	local resetButton = uiStandardButton:create(parentView, resetButtonSize)
+	resetButton = uiStandardButton:create(parentView, resetButtonSize)
 	resetButton.relativePosition = ViewPosition(MJPositionOuterRight, MJPositionCenter)
 	resetButton.relativeView = sliderValueView
 	resetButton.baseOffset = vec3(25, 0, 0)
@@ -302,7 +309,7 @@ function tweaksUI:generateTimeSlot(parentView)
 		setSpeedConstantAndReload("fastSpeed", newValue)
 	end)
 
-	addSlider(timeSlot, "Ultra Speed: ", 1, 1000, getCurrentSpeedValue("ultraSpeed", 10), 64, 10, function(newValue)
+	addSlider(timeSlot, "Ultra Speed: ", 1, 2000, getCurrentSpeedValue("ultraSpeed", 10), 64, 10, function(newValue)
 		setSpeedConstantAndReload("ultraSpeed", newValue)
 	end)
 
@@ -427,10 +434,8 @@ function tweaksUI:generateSapienSlot(parentView)
 
 	addTitleHeader(sapienSlot, "Sapien Tweaks")
 
-	-- parentView, toggleButtonTitle, toggleValue, changedFunction
-	addToggleButton(sapienSlot, "Normalize Walk Speed", "normalizeWalkSpeed", function(newValue)
-		--- No implementation, since all we want is walk speed normalization :)
-	end)
+	local dayLength = 2880.0
+	local yearLength = 46080.0
 
 	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
 	local ratio = 10
@@ -460,14 +465,71 @@ function tweaksUI:generateSapienSlot(parentView)
 		saveState:setValue("vt.needMusicMultiplier", newValue)
 	end)
 
-	local ratio = 0.1
-	addSlider(sapienSlot, "Injury Duration: ", 0, 100, saveState:getValue("vt.injuryDuration", {default = 400}) * ratio, 400, ratio, function(newValue)
+	local ratio = 0.01
+	local default = dayLength
+	addSlider(sapienSlot, "Injury Duration: ", 0, 100, saveState:getValue("vt.injuryDuration", {default = default}) * ratio, default, ratio, function(newValue)
 		setConstantFromTable({
 			tableName = "sapienConstants",
 			constantName = "injuryDuration",
 			value = newValue
 		})
 		saveState:setValue("vt.injuryDuration", newValue)
+	end)
+
+	local ratio = 0.01
+	local default = dayLength
+	addSlider(sapienSlot, "Burn Duration: ", 0, 100, saveState:getValue("vt.burnDuration", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "burnDuration",
+			value = newValue
+		})
+		saveState:setValue("vt.burnDuration", newValue)
+	end)
+
+	local ratio = 10
+	local default = 0.4
+	addSlider(sapienSlot, "Virus from Nomad Chance", 0, 100, saveState:getValue("vt.virusInNomadTribeChance", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "virusInNomadTribeChance",
+			value = newValue
+		})
+		saveState:setValue("vt.virusInNomadTribeChance", newValue)
+	end)
+	
+	local ratio = 1
+	local default = 15
+	addSlider(sapienSlot, "Min Pop for Virus", 0, 100, saveState:getValue("vt.minPopulationForVirusIntroduction", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "minPopulationForVirusIntroduction",
+			value = newValue
+		})
+		saveState:setValue("vt.minPopulationForVirusIntroduction", newValue)
+	end)
+
+
+	local ratio = 0.01
+	local default = dayLength
+	addSlider(sapienSlot, "Food Poison Duration: ", 0, 100, saveState:getValue("vt.foodPoisoningDuration", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "foodPoisoningDuration",
+			value = newValue
+		})
+		saveState:setValue("vt.foodPoisoningDuration", newValue)
+	end)
+
+	local ratio = 0.1
+	local default = dayLength * 2
+	addSlider(sapienSlot, "Virus Duration: ", 0, 100, saveState:getValue("vt.virusDuration", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "virusDuration",
+			value = newValue
+		})
+		saveState:setValue("vt.virusDuration", newValue)
 	end)
 
 	local ratio = 1
@@ -493,6 +555,53 @@ function tweaksUI:generateSapienSlot(parentView)
 	end)
 
 	return sapienSlot
+end
+
+function tweaksUI:generatePopulationSlot(parentView)
+	local populationSlot = View.new(parentView)
+	elementYOffset = elementYOffsetStart
+	populationSlot.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
+	populationSlot.size = backgroundSize
+
+	addTitleHeader(populationSlot, "Population Tweaks")
+
+	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
+	local ratio = 10
+	local default = 1
+	addSlider(populationSlot, "Pregnancy Duration: ", 0, 50, saveState:getValue("vt.pregnancyDurationDays", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "pregnancyDurationDays",
+			value = newValue
+		})
+		saveState:setValue("vt.pregnancyDurationDays", newValue)
+	end)
+
+	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
+	local ratio = 10
+	local default = 1
+	addSlider(populationSlot, "Infant Duration: ", 0, 50, saveState:getValue("vt.infantDurationDays", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "infantDurationDays",
+			value = newValue
+		})
+		saveState:setValue("vt.infantDurationDays", newValue)
+	end)
+
+	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
+	local ratio = 10
+	local default = 3
+	addSlider(populationSlot, "Time between Pregnancies: ", 0, 100, saveState:getValue("vt.minTimeBetweenPregnancyDays", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "minTimeBetweenPregnancyDays",
+			value = newValue
+		})
+		saveState:setValue("vt.minTimeBetweenPregnancyDays", newValue)
+	end)
+
+	return populationSlot
 end
 
 function tweaksUI:init(manageUI)
@@ -530,6 +639,7 @@ function tweaksUI:init(manageUI)
 	self:addSettingSlot(tabView, "Progression", self:generateProgressionSlot(self.view))
 	self:addSettingSlot(tabView, "Movement", self:generateMovementSlot(self.view))
 	self:addSettingSlot(tabView, "Sapiens", self:generateSapienSlot(self.view))
+	self:addSettingSlot(tabView, "Population", self:generatePopulationSlot(self.view))
 
 	-- Make the first setting slot visible
 	tweaksUI.settingSlots[1].hidden = false
