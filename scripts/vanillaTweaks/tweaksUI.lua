@@ -58,10 +58,6 @@ local backgroundWidth = 1140
 local backgroundHeight = 640
 local backgroundSize = vec2(backgroundWidth, backgroundHeight)
 
-local buttonBoxWidth = 80
-local buttonBoxHeight = backgroundHeight - 80.0
-local buttonBoxSize = vec2(buttonBoxWidth, buttonBoxHeight)
-
 local buttonWidth = 180
 local buttonHeight = 40
 local buttonSize = vec2(buttonWidth, buttonHeight)
@@ -151,21 +147,29 @@ local function addSlider(parentView, sliderTitle, min, max, currentValue, defaul
 	local sliderValueView = nil
 	local resetButton = nil
 	
-	-- Adjust the changed function to also include the slider value view
-	local super_changedFunction = changedFunction
-	changedFunction = function(newValue)
-		local floatValue = newValue / floatDivisor
+	local function setSliderVisuals(floatValue)
 		if floatValue == defaultValue then
 			resetButton.hidden = true
 		else
 			resetButton.hidden = false
 		end
 
+		sliderValueView.text = string.format("%.5f", floatValue)
+	end
+	
+	-- Adjust the changed function to also include the slider value view
+	local super_changedFunction = changedFunction
+	changedFunction = function(newValue)
+		local floatValue = newValue / floatDivisor
 		super_changedFunction(floatValue)
-		sliderValueView.text = string.format("%.1f", floatValue)
+		setSliderVisuals(floatValue)
 	end
 
-	local sliderView = uiSlider:create(parentView, vec2(300, 20), min, max, currentValue, nil, changedFunction)
+	local minOptions = {
+		continuous = true,
+		releasedFunction = changedFunction
+	}
+	local sliderView = uiSlider:create(parentView, vec2(300, 20), min, max, currentValue, minOptions, setSliderVisuals)
 	sliderView.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
 	sliderView.baseOffset = vec3(elementControlX, elementYOffset - 6, 0)
 	
@@ -326,7 +330,7 @@ function tweaksUI:generateMovementSlot(parentView)
 	movementSlot.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
 	movementSlot.size = backgroundSize
 	
-	addTitleHeader(movementSlot, "Movement Tweaks")
+	addTitleHeader(movementSlot, "Player Tweaks")
 
 
 	-- parentView, toggleButtonTitle, toggleValue, changedFunction
@@ -335,7 +339,7 @@ function tweaksUI:generateMovementSlot(parentView)
 
 		if newValue then
 			localPlayer:setMaxPlayerHeight(mj:mToP(10000000.0))
-			localPlayer:setSpeedIncreaseFactorAtMaxHeight(400000.0)
+			localPlayer:setSpeedIncreaseFactorAtMaxHeight(1000000.0)
 		else
 			localPlayer:setMaxPlayerHeight(mj:mToP(30.0))
 			localPlayer:setSpeedIncreaseFactorAtMaxHeight(500000.0)
@@ -346,9 +350,9 @@ function tweaksUI:generateMovementSlot(parentView)
 		local localPlayer = mjrequire "mainThread/localPlayer"
 
 		if newValue then
-			localPlayer:setMaxDistanceFromClosestSapien(mj:mToP(1000.0))
+			localPlayer:setMaxDistanceFromClosestSapien(mj:mToP(10000000.0))
 		else
-			localPlayer:setMaxDistanceFromClosestSapien(mj:mToP(1000000.0))
+			localPlayer:setMaxDistanceFromClosestSapien(mj:mToP(1000.0))
 		end
 	end)
 
@@ -365,7 +369,7 @@ function tweaksUI:generateInformationSlot(parentView)
 	textView.font = Font(uiCommon.fontName, 16)
 	textView.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
 	textView.baseOffset = vec3( 450,elementYOffset - 4, 0)
-	textView.text = "Welcome to Vanilla Tweaks!\n\nThis mod is designed as a replacement for one-off tweak mods,\nwhich adjust something to a static value.\n\nEvery setting here can be set, in-game, to your choice.\n\nI will be adding more settings soon. Topics include:\n - Birthrate\n - Sapien Age\n - Animal Spawns"
+	textView.text = "Welcome to Vanilla Tweaks!\n\nThis mod is designed as a replacement for one-off tweak mods,\nwhich adjust a game constant to a static value (say, 10 roles).\n\nEverything here can be set, in-game, to your choice.\nTweaked values will persist across world reloads.\n\nHave fun!"
 
 	return infoSlot
 end
@@ -487,6 +491,29 @@ function tweaksUI:generateSapienSlot(parentView)
 		saveState:setValue("vt.burnDuration", newValue)
 	end)
 
+
+	local ratio = 0.01
+	local default = dayLength
+	addSlider(sapienSlot, "Food Poison Duration: ", 0, 100, saveState:getValue("vt.foodPoisoningDuration", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "foodPoisoningDuration",
+			value = newValue
+		})
+		saveState:setValue("vt.foodPoisoningDuration", newValue)
+	end)
+
+	local ratio = 0.01
+	local default = dayLength * 2
+	addSlider(sapienSlot, "Virus Duration: ", 0, 100, saveState:getValue("vt.virusDuration", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "sapienConstants",
+			constantName = "virusDuration",
+			value = newValue
+		})
+		saveState:setValue("vt.virusDuration", newValue)
+	end)
+
 	local ratio = 10
 	local default = 0.4
 	addSlider(sapienSlot, "Virus from Nomad Chance", 0, 100, saveState:getValue("vt.virusInNomadTribeChance", {default = default}) * ratio, default, ratio, function(newValue)
@@ -509,31 +536,8 @@ function tweaksUI:generateSapienSlot(parentView)
 		saveState:setValue("vt.minPopulationForVirusIntroduction", newValue)
 	end)
 
-
-	local ratio = 0.01
-	local default = dayLength
-	addSlider(sapienSlot, "Food Poison Duration: ", 0, 100, saveState:getValue("vt.foodPoisoningDuration", {default = default}) * ratio, default, ratio, function(newValue)
-		setConstantFromTable({
-			tableName = "sapienConstants",
-			constantName = "foodPoisoningDuration",
-			value = newValue
-		})
-		saveState:setValue("vt.foodPoisoningDuration", newValue)
-	end)
-
-	local ratio = 0.1
-	local default = dayLength * 2
-	addSlider(sapienSlot, "Virus Duration: ", 0, 100, saveState:getValue("vt.virusDuration", {default = default}) * ratio, default, ratio, function(newValue)
-		setConstantFromTable({
-			tableName = "sapienConstants",
-			constantName = "virusDuration",
-			value = newValue
-		})
-		saveState:setValue("vt.virusDuration", newValue)
-	end)
-
 	local ratio = 1
-	local default = 10
+	local default = sapienConstants.wetDuration -- (20)
 	addSlider(sapienSlot, "Time to become Wet: ", 0, 100, saveState:getValue("vt.wetDuration", {default = default}) * ratio, default, ratio, function(newValue)
 		setConstantFromTable({
 			tableName = "sapienConstants",
@@ -544,7 +548,7 @@ function tweaksUI:generateSapienSlot(parentView)
 	end)
 
 	local ratio = 1
-	local default = 30
+	local default = sapienConstants.dryDuration -- (60)
 	addSlider(sapienSlot, "Time to become Dry: ", 0, 100, saveState:getValue("vt.dryDuration", {default = default}) * ratio, default, ratio, function(newValue)
 		setConstantFromTable({
 			tableName = "sapienConstants",
@@ -555,6 +559,71 @@ function tweaksUI:generateSapienSlot(parentView)
 	end)
 
 	return sapienSlot
+end
+
+function tweaksUI:generateWorldSlot(parentView)
+	local worldSlot = View.new(parentView)
+	elementYOffset = elementYOffsetStart
+	worldSlot.relativePosition = ViewPosition(MJPositionInnerLeft, MJPositionTop)
+	worldSlot.size = backgroundSize
+
+	addTitleHeader(worldSlot, "World Tweaks")
+
+	-- parentView, toggleButtonTitle, toggleValue, changedFunction
+	-- addToggleButton(worldSlot, "Always Fine Weather", "alwaysFineWeather", function(newValue)
+	-- 	setConstantFromTable({
+	-- 		tableName = "gameConstants",
+	-- 		constantName = "alwaysFineWeather",
+	-- 		value = newValue
+	-- 	})
+	-- end)
+
+	-- -- parentView, toggleButtonTitle, toggleValue, changedFunction
+	-- addToggleButton(worldSlot, "Always Wind-storms", "debugConstantWindStorm", function(newValue)
+	-- 	setConstantFromTable({
+	-- 		tableName = "gameConstants",
+	-- 		constantName = "debugConstantWindStorm",
+	-- 		value = newValue
+	-- 	})
+	-- end)
+
+	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
+	local ratio = 1000
+	local default = 0.05
+	addSlider(worldSlot, "Wind Destruction (light objects): ", 0, 100, saveState:getValue("vt.windAffectedCallbackHighChancePerSecond", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "gameConstants",
+			constantName = "windAffectedCallbackHighChancePerSecond",
+			value = newValue
+		})
+		saveState:setValue("vt.windAffectedCallbackHighChancePerSecond", newValue)
+	end)
+
+	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
+	local ratio = 100000
+	local default = 0.0005
+	addSlider(worldSlot, "Wind Destruction (flora): ", 0, 100, saveState:getValue("vt.windAffectedCallbackModerateChancePerSecond", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "gameConstants",
+			constantName = "windAffectedCallbackModerateChancePerSecond",
+			value = newValue
+		})
+		saveState:setValue("vt.windAffectedCallbackModerateChancePerSecond", newValue)
+	end)
+
+	-- local function addSlider(parentView, sliderTitle, min, max, currentValue, defaultValue, floatDivisor, changedFunction)
+	local ratio = 100000
+	local default = 0.0003
+	addSlider(worldSlot, "Wind Destruction (thatch): ", 0, 100, saveState:getValue("vt.windAffectedCallbackLowChancePerSecond", {default = default}) * ratio, default, ratio, function(newValue)
+		setConstantFromTable({
+			tableName = "gameConstants",
+			constantName = "windAffectedCallbackLowChancePerSecond",
+			value = newValue
+		})
+		saveState:setValue("vt.windAffectedCallbackLowChancePerSecond", newValue)
+	end)
+
+	return worldSlot
 end
 
 function tweaksUI:generatePopulationSlot(parentView)
@@ -637,21 +706,14 @@ function tweaksUI:init(manageUI)
 
 	self:addSettingSlot(tabView, "Time", self:generateTimeSlot(self.view))
 	self:addSettingSlot(tabView, "Progression", self:generateProgressionSlot(self.view))
-	self:addSettingSlot(tabView, "Movement", self:generateMovementSlot(self.view))
+	self:addSettingSlot(tabView, "Player", self:generateMovementSlot(self.view))
 	self:addSettingSlot(tabView, "Sapiens", self:generateSapienSlot(self.view))
 	self:addSettingSlot(tabView, "Population", self:generatePopulationSlot(self.view))
+	self:addSettingSlot(tabView, "World", self:generateWorldSlot(self.view))
 
 	-- Make the first setting slot visible
 	tweaksUI.settingSlots[1].hidden = false
 
-	-- Close Button
-	local closeButton = uiStandardButton:create(backgroundView, vec2(50,50), uiStandardButton.types.markerLike)
-	closeButton.relativePosition = ViewPosition(MJPositionInnerRight, MJPositionAbove)
-	closeButton.baseOffset = vec3(30, -20, 0)
-	uiStandardButton:setIconModel(closeButton, "icon_cross")
-	uiStandardButton:setClickFunction(closeButton, function()
-		tweaksUI.view.hidden = true
-	end)
 end
 
 -- Called every frame

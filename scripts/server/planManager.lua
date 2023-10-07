@@ -3,6 +3,7 @@
 
 --- Hammerstone
 local saveState = mjrequire "hammerstone/state/saveState"
+local gameConstants = mjrequire "common/gameConstants"
 
 local mod = {
 	loadOrder = 1
@@ -24,7 +25,7 @@ function mod:onload(planManager)
 	planManager.updatePlansForFollowerCountChange = function(self, tribeID, followerCount)
 
 		local clientID = mod.serverWorld:clientIDForTribeID(tribeID)
-		local defaultPlans = 5 -- TODO: Make this pull from gameconstants.lua
+		local defaultPlans = gameConstants.allowedPlansPerFollower
 		local desiredPlans = saveState:getValueServer("vt.allowedPlansPerFollower", clientID, defaultPlans)
 
 		--- Logic: we need to find an integer, that multiplied by 5 is equal to the desired plans.

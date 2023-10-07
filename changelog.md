@@ -9,4 +9,11 @@ The first release of vanilla tweaks, offering a variety of tweak options. Powere
  - Fixed injury duration from default of 400, to default of 2880. I believe this was a bug.
  - Added burn, virus, and food poison duration
  - Removed 'Normalize Walk Speed'. This was actually buggy and was the reverse of expected.
- - 
+ - Added wind and weather tweaks
+
+# 1.1.0
+
+ - Fixed duplicate 'exit' button, introduced as a breaking change in Hammerstone
+ - Fixed 'Remove Movement Bounds' tweak
+ - Sliders now update in real-time
+ - Allowed faster movement speed when using unlocked player height
