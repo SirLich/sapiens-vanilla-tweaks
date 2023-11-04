@@ -678,18 +678,18 @@ function tweaksUI:init(manageUI)
 	--- @param manageUI UI The UI that is your parent.
 
 	-- Main View
-	tweaksUI.view = View.new(manageUI.view)
+	tweaksUI.view = View.new(manageUI)
 	tweaksUI.view.size = backgroundSize
 	tweaksUI.view.relativePosition = ViewPosition(MJPositionCenter, MJPositionCenter)
 	tweaksUI.view.hidden = true
 
-	-- Background View
-	local backgroundView = ModelView.new(tweaksUI.view)
-	backgroundView:setModel(model:modelIndexForName("ui_bg_lg_16x9"))
-	local scaleToUse = backgroundSize.x * 0.5
-	backgroundView.scale3D = vec3(scaleToUse,scaleToUse,scaleToUse)
-	backgroundView.relativePosition = ViewPosition(MJPositionCenter, MJPositionCenter)
-	backgroundView.size = backgroundSize
+	-- -- Background View
+	-- local backgroundView = ModelView.new(tweaksUI.view)
+	-- backgroundView:setModel(model:modelIndexForName("ui_bg_lg_16x9"))
+	-- local scaleToUse = backgroundSize.x * 0.5
+	-- backgroundView.scale3D = vec3(scaleToUse,scaleToUse,scaleToUse)
+	-- backgroundView.relativePosition = ViewPosition(MJPositionCenter, MJPositionCenter)
+	-- backgroundView.size = backgroundSize
 
 	-- Button Inset
 	local tabView = ModelView.new(tweaksUI.view)

@@ -17,3 +17,7 @@ The first release of vanilla tweaks, offering a variety of tweak options. Powere
  - Fixed 'Remove Movement Bounds' tweak
  - Sliders now update in real-time
  - Allowed faster movement speed when using unlocked player height
+
+# 1.1.1
+
+ - Fixed a compatibility issue with Hammerstone 1.6.0
