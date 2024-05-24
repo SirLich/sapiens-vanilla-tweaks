@@ -346,16 +346,6 @@ function tweaksUI:generateMovementSlot(parentView)
 		end
 	end)
 
-	addToggleButton(movementSlot, "Remove Movement Bounds", "removeMovementBounds", function(newValue)
-		local localPlayer = mjrequire "mainThread/localPlayer"
-
-		if newValue then
-			localPlayer:setMaxDistanceFromClosestSapien(mj:mToP(10000000.0))
-		else
-			localPlayer:setMaxDistanceFromClosestSapien(mj:mToP(1000.0))
-		end
-	end)
-
 	return movementSlot
 end
 
