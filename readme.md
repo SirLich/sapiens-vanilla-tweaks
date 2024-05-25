@@ -24,6 +24,7 @@ In a nutshell, this mod is intending to replace the proliferation of small mods 
 
 - Introduces support for Sapiens 0.5
 - Removes the 'Unlock Player Bounds' toggle which no longer does anything
+- Fixes bug where tribe could suddenly die during long loading times
 
 # 1.1.1
 

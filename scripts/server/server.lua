@@ -35,8 +35,9 @@ end
 
 local function refreshPlansServer(clientID)
 	-- This won't "do" anything other than trigger a recalculation of the plans.
-	mod.serverWorld:addToClientFollowerCount(clientID, 1)
-	mod.serverWorld:addToClientFollowerCount(clientID, -1)
+	-- This is disabled because it can cause a tribe to be suddenly lost during long loading times.
+	-- mod.serverWorld:addToClientFollowerCount(clientID, 1)
+	-- mod.serverWorld:addToClientFollowerCount(clientID, -1)
 end
 
 
